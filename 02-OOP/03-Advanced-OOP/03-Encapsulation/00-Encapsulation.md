@@ -1,261 +1,347 @@
-# Encapsulation - Data Protection
+# Encapsulation
 
 ## Overview
 
-Encapsulation hides internal implementation details and controls access to object data through public interfaces.
+Encapsulation hides internal implementation details and exposes only a controlled public interface. It protects data integrity, allows implementation changes without breaking code, and is a core OOP principle.
 
-## Principle of Encapsulation
+## What is Encapsulation?
+
+Encapsulation:
+- Hides internal state
+- Exposes controlled access through public methods/properties
+- Prevents direct data modification
+- Allows validation logic
 
 ```csharp
-// Bad - Direct data access
-public class BankAccountBad
+// Bad - Direct access, no protection
+public class AccountBad
 {
-    public decimal Balance;  // Public field - no protection
+    public decimal Balance;  // Anyone can modify
 }
 
-var account = new BankAccountBad();
-account.Balance = -1000;  // Invalid!
-
-// Good - Controlled access
-public class BankAccount
+// Good - Encapsulated
+public class Account
 {
-    private decimal _balance;
+    private decimal _balance;  // Hidden
     
     public decimal Balance
     {
         get { return _balance; }
-        set { _balance = value >= 0 ? value : 0; }  // Validation
+        set
+        {
+            if (value < 0)
+                throw new ArgumentException("Balance cannot be negative");
+            _balance = value;
+        }
     }
 }
 
+// Usage
+var account = new Account();
+account.Balance = 1000;  // Validated
+// account.Balance = -100;  // Throws exception
+```
+
+## Private vs Public
+
+Control what is visible:
+
+```csharp
+public class BankAccount
+{
+    // Private - hidden from outside
+    private string _pin;
+    private List<Transaction> _transactions;
+    
+    // Public - accessible from outside
+    public string AccountNumber { get; private set; }
+    public decimal Balance { get; private set; }
+    
+    // Public method for controlled access
+    public void Withdraw(decimal amount)
+    {
+        if (amount > Balance)
+            throw new InvalidOperationException("Insufficient funds");
+        
+        Balance -= amount;
+        _transactions.Add(new Transaction(amount, "Withdraw"));
+    }
+}
+
+// Usage
 var account = new BankAccount();
-account.Balance = -1000;  // Sets to 0 instead
+account.Withdraw(100);      // OK - public method
+// account._transactions;   // ERROR - private
 ```
 
-## Access Levels
+## Protected Members (Inheritance)
 
-```csharp
-public class EncapsulationExample
-{
-    // Public - accessible everywhere
-    public string PublicData { get; set; }
-    
-    // Private - accessible only in this class
-    private string _privateData;
-    
-    // Protected - accessible in derived classes
-    protected string ProtectedData;
-    
-    // Internal - accessible in same assembly
-    internal string InternalData;
-    
-    // Protected internal - protected or internal
-    protected internal string ProtectedInternalData;
-}
-```
-
-## Hiding Implementation
-
-```csharp
-public class EmailService
-{
-    // Public interface
-    public void SendEmail(string to, string message)
-    {
-        ValidateEmail(to);
-        BuildMessage(message);
-        SendViaSmtp();
-    }
-    
-    // Private implementation - hidden
-    private void ValidateEmail(string email)
-    {
-        // Validation logic
-    }
-    
-    private void BuildMessage(string message)
-    {
-        // Message building
-    }
-    
-    private void SendViaSmtp()
-    {
-        // SMTP logic
-    }
-}
-
-// Usage - only see public interface
-var service = new EmailService();
-service.SendEmail("user@example.com", "Hello");
-// Implementation details hidden
-```
-
-## Property Encapsulation
+Accessible in derived classes but not outside:
 
 ```csharp
 public class Employee
 {
+    // Private - only this class
+    private decimal _salary;
+    
+    // Protected - this class + derived classes
+    protected string _department;
+    
+    // Public - everyone
+    public string Name { get; set; }
+}
+
+public class Manager : Employee
+{
+    public void SetDepartment(string dept)
+    {
+        _department = dept;  // OK - protected accessible
+        // _salary = 50000;  // ERROR - private not accessible
+    }
+}
+```
+
+## Data Validation
+
+Encapsulation enables validation:
+
+```csharp
+public class Person
+{
     private int _age;
     
-    // Encapsulated property with validation
     public int Age
     {
         get { return _age; }
         set
         {
             if (value < 0 || value > 150)
-                throw new ArgumentException("Invalid age");
+                throw new ArgumentException("Age must be 0-150");
             _age = value;
         }
     }
     
-    // Read-only property
-    public int YearsUntilRetirement
-    {
-        get { return Math.Max(0, 65 - _age); }
-    }
+    private string _email;
     
-    // Write-only property (rare)
-    private string _password;
-    public string Password
+    public string Email
     {
-        set { _password = value; }  // Only set, cannot read
+        get { return _email; }
+        set
+        {
+            if (!value.Contains("@"))
+                throw new ArgumentException("Invalid email");
+            _email = value;
+        }
     }
 }
 
 // Usage
-var emp = new Employee();
-emp.Age = 30;
-Console.WriteLine(emp.YearsUntilRetirement);  // 35
-emp.Password = "secret";  // Can set
-// Console.WriteLine(emp.Password);  // ERROR - cannot read
+var person = new Person();
+person.Age = 30;          // OK
+person.Email = "test@example.com";  // OK
+// person.Age = 200;      // Throws
+// person.Email = "bad";  // Throws
 ```
 
-## Method Visibility
+## Computed Properties
+
+Calculate values on access without exposing calculation logic:
 
 ```csharp
-public class DataProcessor
+public class Rectangle
 {
-    // Public - exposed interface
-    public void ProcessData(string input)
+    public double Width { get; set; }
+    public double Height { get; set; }
+    
+    // Area computed from width and height
+    public double Area
     {
-        string validated = ValidateInput(input);
-        string transformed = TransformData(validated);
-        SaveData(transformed);
+        get { return Width * Height; }
     }
     
-    // Private - internal implementation
-    private string ValidateInput(string input)
+    // Perimeter computed
+    public double Perimeter
     {
-        return string.IsNullOrEmpty(input) ? "" : input.Trim();
-    }
-    
-    private string TransformData(string data)
-    {
-        return data.ToUpper();
-    }
-    
-    private void SaveData(string data)
-    {
-        // Save implementation
-    }
-}
-```
-
-## Lazy Loading Encapsulation
-
-```csharp
-public class User
-{
-    private List<Order> _orders;
-    private bool _ordersLoaded = false;
-    
-    // Encapsulate expensive operation
-    public IEnumerable<Order> Orders
-    {
-        get
-        {
-            if (!_ordersLoaded)
-            {
-                _orders = LoadOrdersFromDatabase();
-                _ordersLoaded = true;
-            }
-            return _orders;
-        }
-    }
-    
-    private List<Order> LoadOrdersFromDatabase()
-    {
-        // Expensive database query
-        return new List<Order>();
+        get { return 2 * (Width + Height); }
     }
 }
 
-// Usage - details hidden
-var user = new User();
-var orders = user.Orders;  // Loads if needed
+// Usage - Area is calculated, not stored
+var rect = new Rectangle { Width = 10, Height = 5 };
+Console.WriteLine(rect.Area);  // 50 (calculated)
 ```
 
-## Benefits of Encapsulation
+## Read-Only Properties
 
-### 1. Protection
+Expose data that cannot be changed:
+
+```csharp
+public class Product
+{
+    public int Id { get; }  // Read-only, set in constructor
+    public string Name { get; set; }
+    
+    public Product(int id, string name)
+    {
+        Id = id;
+        Name = name;
+    }
+}
+
+// Usage
+var product = new Product(1, "Laptop");
+// product.Id = 2;  // ERROR - read-only
+product.Name = "Desktop";  // OK
+```
+
+## Access Through Methods
+
+Old-style encapsulation (before properties):
 
 ```csharp
 public class Account
 {
     private decimal _balance;
     
-    // Prevent invalid states
-    public decimal Balance
+    // Getter method
+    public decimal GetBalance()
     {
-        get { return _balance; }
-        set { _balance = value >= 0 ? value : _balance; }
+        return _balance;
+    }
+    
+    // Setter method with validation
+    public void SetBalance(decimal amount)
+    {
+        if (amount < 0)
+            throw new ArgumentException("Balance cannot be negative");
+        _balance = amount;
+    }
+}
+
+// Usage - more verbose than properties
+var account = new Account();
+account.SetBalance(1000);
+decimal bal = account.GetBalance();
+```
+
+## Protecting Collections
+
+Expose collections safely:
+
+```csharp
+// Bad - external code can modify collection
+public class TeamBad
+{
+    public List<string> Members { get; set; }  // Direct access
+}
+
+var team = new TeamBad();
+team.Members = null;  // Breaks class!
+
+// Good - expose as read-only
+public class TeamGood
+{
+    private List<string> _members = new();
+    
+    public IReadOnlyList<string> Members
+    {
+        get { return _members.AsReadOnly(); }
+    }
+    
+    public void AddMember(string name)
+    {
+        _members.Add(name);
+    }
+}
+
+var team = new TeamGood();
+team.AddMember("Alice");
+// team.Members = null;  // ERROR - property is read-only
+```
+
+## Benefits of Encapsulation
+
+1. **Data Integrity** - Prevent invalid states
+2. **Implementation Hiding** - Change internals safely
+3. **Validation** - Enforce rules automatically
+4. **Flexibility** - Add logic without changing interface
+5. **Maintainability** - Easier to understand and modify
+
+```csharp
+// Can change internal implementation without breaking code
+public class Temperature
+{
+    private double _celsius;
+    
+    public double Celsius
+    {
+        get { return _celsius; }
+        set { _celsius = value; }
+    }
+    
+    public double Fahrenheit
+    {
+        get { return (_celsius * 9 / 5) + 32; }
+    }
+}
+
+// Later: change how Celsius is stored
+// External code doesn't care, interface unchanged
+```
+
+## Best Practices
+
+### Make Fields Private
+
+```csharp
+// Bad - expose internals
+public class ConfigBad
+{
+    public List<string> _settings;
+}
+
+// Good - hide internals
+public class ConfigGood
+{
+    private List<string> _settings;
+    
+    public IReadOnlyList<string> Settings
+    {
+        get { return _settings.AsReadOnly(); }
     }
 }
 ```
 
-### 2. Flexibility
+### Use Properties for Access
 
 ```csharp
-public class Logger
+// Good - use properties
+public class Data
 {
-    // Can change implementation later
-    private ILogWriter _writer;
-    
-    public void Log(string message)
-    {
-        _writer.Write(message);
-    }
+    private int _value;
+    public int Value { get; set; }
 }
-```
 
-### 3. Maintainability
-
-```csharp
-// Private methods can be refactored without affecting users
-public class DataService
+// Bad - direct field access
+public class DataBad
 {
-    public void LoadData()
-    {
-        var data = FetchFromDatabase();
-        ProcessData(data);
-    }
-    
-    private void ProcessData(IEnumerable<T> data) { }
+    public int Value;
 }
 ```
 
 ## Summary
 
-- **Encapsulation** - Hide implementation, expose interface
-- **Access modifiers** - Control visibility
-- **Properties** - Controlled data access
+- **Encapsulation** - Hide internal details, expose interface
+- **Private** - Hidden from outside
+- **Protected** - Hidden except in derived classes
+- **Public** - Accessible everywhere
 - **Validation** - Protect data integrity
-- **Private** - Internal implementation
-- **Public** - External interface
-- **Benefits** - Protection, flexibility, maintainability
+- **Computed** - Calculate on access
+- **Read-only** - Prevent modification
+- **Collections** - Expose as IReadOnly
 
 ## Next Steps
 
-- Learn [Static-Members](../04-Static-Members/00-Static-Members.md)
-- Study [Access-Modifiers](../05-Access-Modifiers/00-Access-Modifiers.md)
+- Learn [Access-Modifiers](../04-Access-Modifiers/00-Access-Modifiers.md) for visibility control
+- Study [Interfaces-Basics](../01-Interfaces-Basics/00-Interfaces-Basics.md) for contracts
+- Review [Abstract-Classes](../02-Abstract-Classes/00-Abstract-Classes.md) for inheritance
