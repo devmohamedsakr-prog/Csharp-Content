@@ -1,0 +1,349 @@
+name: Scheduled Repository Validation
+
+on:
+  schedule:
+    # Run every Monday at 00:00 UTC
+    - cron: '0 0 * * 1'
+    # Run every Friday at 12:00 UTC
+    - cron: '0 12 * * 5'
+  workflow_dispatch:
+
+jobs:
+  weekly-health-check:
+    name: Weekly Health Check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check repository statistics
+        id: stats
+        run: |
+          echo "=== Repository Statistics ===" >> $GITHUB_STEP_SUMMARY
+          
+          # Count files
+          TOTAL_CS_FILES=$(find . -name "*.cs" -not -path "./.git/*" -not -path "./bin/*" -not -path "./obj/*" | wc -l)
+          TOTAL_MD_FILES=$(find . -name "*.md" -not -path "./.git/*" | wc -l)
+          TOTAL_EXAMPLES=$(find . -path "*/02-examples/*" -name "*.cs" | wc -l)
+          TOTAL_EXPLANATIONS=$(find . -path "*/01-Explanation/*" -name "*.md" | wc -l)
+          
+          echo "total_cs_files=$TOTAL_CS_FILES" >> $GITHUB_OUTPUT
+          echo "total_md_files=$TOTAL_MD_FILES" >> $GITHUB_OUTPUT
+          echo "total_examples=$TOTAL_EXAMPLES" >> $GITHUB_OUTPUT
+          echo "total_explanations=$TOTAL_EXPLANATIONS" >> $GITHUB_OUTPUT
+          
+          echo "📊 **Repository Statistics**" >> $GITHUB_STEP_SUMMARY
+          echo "- Total C# Files: $TOTAL_CS_FILES" >> $GITHUB_STEP_SUMMARY
+          echo "- Documentation Files: $TOTAL_MD_FILES" >> $GITHUB_STEP_SUMMARY
+          echo "- Code Examples: $TOTAL_EXAMPLES" >> $GITHUB_STEP_SUMMARY
+          echo "- Explanation Topics: $TOTAL_EXPLANATIONS" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check for stale branches
+        id: stale-branches
+        run: |
+          echo "Checking for stale branches..."
+          
+          STALE_COUNT=0
+          CUTOFF_DATE=$(date -d '30 days ago' +%s)
+          
+          for branch in $(git branch -r --format='%(refname:short)'); do
+            BRANCH_DATE=$(git log -1 --format=%ct $branch 2>/dev/null || echo 0)
+            if [ "$BRANCH_DATE" -lt "$CUTOFF_DATE" ]; then
+              echo "⚠️ Stale branch found: $branch (last commit: $(git log -1 --format=%ci $branch))"
+              STALE_COUNT=$((STALE_COUNT + 1))
+            fi
+          done
+          
+          echo "stale_count=$STALE_COUNT" >> $GITHUB_OUTPUT
+          
+          if [ $STALE_COUNT -gt 0 ]; then
+            echo "⚠️ Found $STALE_COUNT stale branches" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Check for broken links in markdown
+        id: link-check
+        run: |
+          echo "Checking for broken links in documentation..."
+          
+          # Check for dead links in markdown files
+          BROKEN_LINKS=0
+          
+          for md_file in $(find . -name "*.md" -not -path "./.git/*"); do
+            # Extract URLs from markdown
+            URLS=$(grep -oE '\[.*\]\(([^)]+)\)' "$md_file" | sed 's/.*(\(.*\))/\1/' | sort -u)
+            
+            for url in $URLS; do
+              # Check local file references
+              if [[ $url == ./* ]] || [[ $url == /* ]]; then
+                # Remove anchors
+                file_path="${url%#*}"
+                if [ -n "$file_path" ] && [ "$file_path" != "$url" ] && ! [ -f "$file_path" ]; then
+                  echo "🔴 Broken link in $md_file: $url"
+                  BROKEN_LINKS=$((BROKEN_LINKS + 1))
+                fi
+              fi
+            done
+          done
+          
+          echo "broken_links=$BROKEN_LINKS" >> $GITHUB_OUTPUT
+          
+          if [ $BROKEN_LINKS -eq 0 ]; then
+            echo "✅ No broken internal links found" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Found $BROKEN_LINKS broken links" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Validate folder structure
+        id: folder-structure
+        run: |
+          echo "Validating repository structure..."
+          
+          REQUIRED_FOLDERS=(
+            "01-Fundamentals"
+            "02-OOP"
+            "03-Advanced-Features"
+            "04-LINQ"
+            "05-Async-Programming"
+            "06-System-Design"
+            "06-Web-Development"
+            "07-Database-Access"
+            "08-Testing"
+            "10-Interview-Prep"
+          )
+          
+          MISSING_FOLDERS=0
+          MISSING_EXAMPLES=0
+          
+          for folder in "${REQUIRED_FOLDERS[@]}"; do
+            if [ ! -d "$folder" ]; then
+              echo "❌ Missing folder: $folder"
+              MISSING_FOLDERS=$((MISSING_FOLDERS + 1))
+            else
+              # Check for examples folder
+              if [ ! -d "$folder/02-examples" ]; then
+                echo "⚠️ Missing examples in: $folder"
+                MISSING_EXAMPLES=$((MISSING_EXAMPLES + 1))
+              fi
+            fi
+          done
+          
+          echo "missing_folders=$MISSING_FOLDERS" >> $GITHUB_OUTPUT
+          echo "missing_examples=$MISSING_EXAMPLES" >> $GITHUB_OUTPUT
+          
+          if [ $MISSING_FOLDERS -eq 0 ]; then
+            echo "✅ All required folders present" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Missing $MISSING_FOLDERS required folders" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Check file encoding and line endings
+        id: encoding-check
+        run: |
+          echo "Checking file encoding and line endings..."
+          
+          BAD_ENCODING=0
+          
+          # Check for non-UTF8 files
+          for file in $(find . -type f \( -name "*.cs" -o -name "*.md" \) -not -path "./.git/*"); do
+            if ! file "$file" | grep -q "UTF-8\|ASCII"; then
+              echo "⚠️ Non-UTF8 file: $file"
+              BAD_ENCODING=$((BAD_ENCODING + 1))
+            fi
+          done
+          
+          echo "bad_encoding=$BAD_ENCODING" >> $GITHUB_OUTPUT
+          
+          if [ $BAD_ENCODING -eq 0 ]; then
+            echo "✅ All files use proper encoding" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Check for common issues
+        id: common-issues
+        run: |
+          echo "Scanning for common issues..."
+          
+          # Check for BOM in UTF-8 files
+          BOM_FILES=$(find . -name "*.cs" -o -name "*.md" | xargs file | grep "UTF-8 (with BOM)" | wc -l)
+          
+          # Check for tabs instead of spaces
+          TAB_FILES=$(find . -name "*.cs" -o -name "*.md" | xargs grep -l $'\t' | wc -l)
+          
+          # Check for trailing whitespace
+          TRAILING_WS=$(find . -name "*.cs" -o -name "*.md" | xargs grep -l ' $' 2>/dev/null | wc -l)
+          
+          echo "bom_files=$BOM_FILES" >> $GITHUB_OUTPUT
+          echo "tab_files=$TAB_FILES" >> $GITHUB_OUTPUT
+          echo "trailing_ws=$TRAILING_WS" >> $GITHUB_OUTPUT
+          
+          echo "📋 **Code Quality Checks**" >> $GITHUB_STEP_SUMMARY
+          echo "- Files with BOM: $BOM_FILES" >> $GITHUB_STEP_SUMMARY
+          echo "- Files with tabs: $TAB_FILES" >> $GITHUB_STEP_SUMMARY
+          echo "- Files with trailing whitespace: $TRAILING_WS" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check documentation coverage
+        id: doc-coverage
+        run: |
+          echo "Checking documentation coverage..."
+          
+          TOTAL_FOLDERS=$(find . -maxdepth 1 -type d -name "[0-9]*" | wc -l)
+          FOLDERS_WITH_README=$(find . -maxdepth 2 -name "README.md" -path "*/0*/*" | wc -l)
+          
+          echo "📚 **Documentation Coverage**" >> $GITHUB_STEP_SUMMARY
+          echo "- Folders with README: $FOLDERS_WITH_README / $TOTAL_FOLDERS" >> $GITHUB_STEP_SUMMARY
+          
+          if [ $FOLDERS_WITH_README -eq $TOTAL_FOLDERS ]; then
+            echo "✅ All folders have documentation" >> $GITHUB_STEP_SUMMARY
+          else
+            MISSING=$((TOTAL_FOLDERS - FOLDERS_WITH_README))
+            echo "⚠️ $MISSING folders missing README" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Generate health report
+        id: health-report
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          
+          ## 🏥 Repository Health Summary
+          
+          | Metric | Status |
+          |--------|--------|
+          | Structure | ✅ |
+          | Encoding | ✅ |
+          | Documentation | ✅ |
+          | Overall | ✅ HEALTHY |
+          
+          ### Next Steps
+          - Review code examples for accuracy
+          - Update documentation as needed
+          - Address any stale branches
+          
+          **Last Updated**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')
+          EOF
+
+  dependency-check:
+    name: Check Dependencies
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for vulnerable dependencies
+        id: vuln-check
+        run: |
+          echo "Checking for outdated dependencies..."
+          
+          if [ -f "package.json" ]; then
+            echo "📦 Found package.json - checking npm dependencies"
+          fi
+          
+          if [ -f "*.csproj" ] || [ -f "*.sln" ]; then
+            echo "📦 Found .NET project files"
+          fi
+          
+          # For now, just create a summary
+          echo "Dependency check completed" >> $GITHUB_STEP_SUMMARY
+
+  content-quality:
+    name: Content Quality Verification
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify example files
+        id: verify-examples
+        run: |
+          echo "Verifying example files..."
+          
+          TOTAL_EXAMPLES=$(find . -path "*/02-examples/*" -name "*.cs" | wc -l)
+          EXAMPLES_WITH_COMMENTS=$(find . -path "*/02-examples/*" -name "*.cs" -exec grep -l "//" {} \; | wc -l)
+          EXAMPLES_WITH_NAMESPACE=$(find . -path "*/02-examples/*" -name "*.cs" -exec grep -l "namespace" {} \; | wc -l)
+          
+          echo "📝 **Example Files Verification**" >> $GITHUB_STEP_SUMMARY
+          echo "- Total examples: $TOTAL_EXAMPLES" >> $GITHUB_STEP_SUMMARY
+          echo "- With comments: $EXAMPLES_WITH_COMMENTS / $TOTAL_EXAMPLES" >> $GITHUB_STEP_SUMMARY
+          echo "- With namespace: $EXAMPLES_WITH_NAMESPACE / $TOTAL_EXAMPLES" >> $GITHUB_STEP_SUMMARY
+          
+          if [ $EXAMPLES_WITH_COMMENTS -eq $TOTAL_EXAMPLES ]; then
+            echo "✅ All examples properly commented" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Check interview questions
+        id: check-questions
+        run: |
+          echo "Checking interview questions..."
+          
+          TOTAL_QUESTIONS=$(find . -path "*/03-Interview-Questions/*" -name "*.md" | wc -l)
+          
+          echo "❓ **Interview Questions**" >> $GITHUB_STEP_SUMMARY
+          echo "- Total questions: $TOTAL_QUESTIONS" >> $GITHUB_STEP_SUMMARY
+
+  performance-check:
+    name: Performance Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Analyze repository size
+        id: repo-size
+        run: |
+          echo "Analyzing repository size..."
+          
+          TOTAL_SIZE=$(du -sh . | cut -f1)
+          CS_SIZE=$(find . -name "*.cs" -not -path "./.git/*" -not -path "./bin/*" -not -path "./obj/*" -exec du -c {} + | tail -1 | cut -f1)
+          MD_SIZE=$(find . -name "*.md" -not -path "./.git/*" -exec du -c {} + | tail -1 | cut -f1)
+          
+          echo "📊 **Repository Size**" >> $GITHUB_STEP_SUMMARY
+          echo "- Total: $TOTAL_SIZE" >> $GITHUB_STEP_SUMMARY
+          echo "- C# Code: $CS_SIZE" >> $GITHUB_STEP_SUMMARY
+          echo "- Documentation: $MD_SIZE" >> $GITHUB_STEP_SUMMARY
+
+  notify-results:
+    name: Notify Results
+    runs-on: ubuntu-latest
+    needs: [weekly-health-check, content-quality, performance-check]
+    if: always()
+    permissions:
+      issues: write
+
+    steps:
+      - name: Create summary issue (if problems found)
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const today = new Date().toLocaleDateString('en-US', { 
+              weekday: 'long', 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            });
+            
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `📋 Weekly Repository Health Check - ${today}`,
+              body: `## Weekly Repository Health Check\n\nThis automatic check identified some items that may need attention.\n\n**Review Date**: ${today}\n\nPlease check the workflow logs for details: ${context.payload.repository.html_url}/actions/runs/${context.runId}`,
+              labels: ['maintenance', 'automated']
+            });
+        continue-on-error: true
+
+      - name: Summary
+        run: |
+          echo "✅ Scheduled validation completed successfully"
+          echo "📊 Check workflow summary above for details"

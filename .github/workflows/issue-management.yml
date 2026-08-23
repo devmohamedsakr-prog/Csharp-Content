@@ -1,0 +1,243 @@
+name: Issue & PR Management
+
+on:
+  issues:
+    types: [opened, edited]
+  pull_request:
+    types: [opened, edited, ready_for_review]
+  issue_comment:
+    types: [created, edited]
+
+jobs:
+  validate-issue:
+    name: Validate Issue Format
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issues'
+    permissions:
+      issues: write
+      pull-requests: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate issue format
+        id: validate
+        run: |
+          ISSUE_BODY="${{ github.event.issue.body }}"
+          ISSUE_TITLE="${{ github.event.issue.title }}"
+          
+          # Check if issue has minimum content
+          if [ -z "$ISSUE_BODY" ] || [ ${#ISSUE_BODY} -lt 20 ]; then
+            echo "incomplete=true" >> $GITHUB_OUTPUT
+            echo "reason=Issue description is too short"
+          else
+            echo "incomplete=false" >> $GITHUB_OUTPUT
+          fi
+          
+          # Check for required sections based on template
+          if echo "$ISSUE_BODY" | grep -q "<!-- "; then
+            echo "uses_template=true" >> $GITHUB_OUTPUT
+          else
+            echo "uses_template=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Comment on incomplete issue
+        if: steps.validate.outputs.incomplete == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '⚠️ **Issue Format Issue**\n\nYour issue description appears to be incomplete. Please provide more details to help us better understand the problem.\n\n- Provide clear steps to reproduce\n- Include environment details\n- Describe expected vs actual behavior\n\nThank you!'
+            });
+
+      - name: Add needs-more-info label if incomplete
+        if: steps.validate.outputs.incomplete == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.addLabels({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['needs-more-info']
+            });
+
+      - name: Welcome new contributor
+        if: github.event.action == 'opened'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const isFirstContribution = context.payload.issue.author_association === 'NONE';
+            
+            if (isFirstContribution) {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '👋 **Welcome to the C# Learning Repository!**\n\nThank you for opening your first issue! We appreciate your engagement. Our team will review this and get back to you soon.\n\n**Quick Links:**\n- [📖 Contributing Guide](../../CONTRIBUTING.md)\n- [📚 Learning Path](../../README.md)\n- [💬 Discussions](../../discussions)\n\nFeel free to ask questions or share feedback!'
+              });
+            }
+        continue-on-error: true
+
+  validate-pr:
+    name: Validate PR Format
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check PR description
+        id: pr-check
+        run: |
+          PR_BODY="${{ github.event.pull_request.body }}"
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          
+          # Check minimum length
+          if [ -z "$PR_BODY" ] || [ ${#PR_BODY} -lt 20 ]; then
+            echo "needs_description=true" >> $GITHUB_OUTPUT
+          else
+            echo "needs_description=false" >> $GITHUB_OUTPUT
+          fi
+          
+          # Check for commit message format
+          if echo "$PR_TITLE" | grep -qE '^(feat|fix|docs|style|refactor|perf|test|chore)(\(.+\))?:'; then
+            echo "follows_convention=true" >> $GITHUB_OUTPUT
+          else
+            echo "follows_convention=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Comment on minimal PR
+        if: steps.pr-check.outputs.needs_description == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '📝 **PR Description Needed**\n\nPlease provide a detailed description of your changes:\n- What is being changed and why?\n- How can reviewers test this?\n- Are there any breaking changes?\n\nThis helps us review your contribution more effectively.'
+            });
+        continue-on-error: true
+
+      - name: Suggest commit convention
+        if: steps.pr-check.outputs.follows_convention == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '💡 **Commit Convention Suggestion**\n\nConsider using conventional commits for your PR title:\n- `feat: add new feature`\n- `fix: correct a bug`\n- `docs: update documentation`\n- `refactor: reorganize code`\n- `test: add or update tests`\n\nThis helps with automatic changelog generation!'
+            });
+        continue-on-error: true
+
+      - name: Welcome PR contributor
+        if: github.event.action == 'opened'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const isFirstPR = context.payload.pull_request.author_association === 'NONE';
+            
+            if (isFirstPR) {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '🎉 **Welcome to the C# Learning Repository!**\n\nThank you for your first contribution! We\'re excited to review your changes.\n\n**What Happens Next:**\n1. Our CI/CD checks will run automatically\n2. Reviewers will provide feedback\n3. Once approved, your changes will be merged\n\n**Tips:**\n- Check that all CI checks pass ✅\n- Respond to review feedback\n- Feel free to ask questions!\n\nHappy contributing! 🚀'
+              });
+            }
+        continue-on-error: true
+
+  add-help-labels:
+    name: Categorize Issues
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issues' && github.event.action == 'opened'
+    permissions:
+      issues: write
+
+    steps:
+      - name: Add labels based on content
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const body = issue.body.toLowerCase();
+            const title = issue.title.toLowerCase();
+            
+            const labels = [];
+            
+            // Add content labels
+            if (body.includes('fundamental') || body.includes('syntax') || body.includes('data type')) {
+              labels.push('content:fundamentals');
+            }
+            if (body.includes('oop') || body.includes('class') || body.includes('inheritance')) {
+              labels.push('content:oop');
+            }
+            if (body.includes('async') || body.includes('await') || body.includes('task')) {
+              labels.push('content:async-programming');
+            }
+            if (body.includes('linq') || body.includes('query')) {
+              labels.push('content:linq');
+            }
+            if (body.includes('example') || body.includes('code')) {
+              labels.push('type:examples');
+            }
+            
+            // Add difficulty labels
+            if (body.includes('beginner') || body.includes('start')) {
+              labels.push('difficulty:beginner');
+            }
+            if (body.includes('interview') || body.includes('question')) {
+              labels.push('content:interview-prep');
+            }
+            
+            if (labels.length > 0) {
+              github.rest.issues.addLabels({
+                issue_number: issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                labels: labels
+              });
+            }
+
+  require-referenced-issue:
+    name: Require Issue Reference
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'opened'
+    permissions:
+      pull-requests: write
+
+    steps:
+      - name: Check for issue reference
+        id: check-ref
+        run: |
+          PR_BODY="${{ github.event.pull_request.body }}"
+          
+          if echo "$PR_BODY" | grep -qE '(fixes|closes|resolves|related to|#[0-9]+)'; then
+            echo "has_reference=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_reference=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Request issue reference
+        if: steps.check-ref.outputs.has_reference == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🔗 **Issue Reference Suggestion**\n\nPlease reference a related issue in your PR description using one of these keywords:\n- Closes #issue_number\n- Fixes #issue_number\n- Resolves #issue_number\n- Related to #issue_number\n\nExample: `Closes #123` links this PR to issue 123.'
+            });
+        continue-on-error: true

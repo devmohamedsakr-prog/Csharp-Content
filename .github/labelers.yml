@@ -1,0 +1,223 @@
+# Labeler Configuration for Automatic PR Labeling
+# This file is used by the labeler.yml workflow to automatically apply labels to PRs
+
+# Content Type Labels
+'content:fundamentals':
+  - changed-files:
+      - any-glob-to-any-file: '01-Fundamentals/**'
+
+'content:oop':
+  - changed-files:
+      - any-glob-to-any-file: '02-OOP/**'
+
+'content:advanced-features':
+  - changed-files:
+      - any-glob-to-any-file: '03-Advanced-Features/**'
+
+'content:linq':
+  - changed-files:
+      - any-glob-to-any-file: '04-LINQ/**'
+
+'content:async-programming':
+  - changed-files:
+      - any-glob-to-any-file: '05-Async-Programming/**'
+
+'content:system-design':
+  - changed-files:
+      - any-glob-to-any-file: '06-System-Design/**'
+
+'content:web-development':
+  - changed-files:
+      - any-glob-to-any-file: '06-Web-Development/**'
+
+'content:database-access':
+  - changed-files:
+      - any-glob-to-any-file: '07-Database-Access/**'
+
+'content:testing':
+  - changed-files:
+      - any-glob-to-any-file: '08-Testing/**'
+
+'content:interview-prep':
+  - changed-files:
+      - any-glob-to-any-file: '10-Interview-Prep/**'
+
+# Change Type Labels
+'type:documentation':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - '**/README.md'
+          - 'CHANGELOG.md'
+          - 'docs/**'
+
+'type:code':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.cs'
+          - '**/*.csproj'
+          - '**/*.sln'
+
+'type:examples':
+  - changed-files:
+      - any-glob-to-any-file: '**/02-examples/**'
+
+'type:explanations':
+  - changed-files:
+      - any-glob-to-any-file: '**/01-Explanation/**'
+
+'type:questions':
+  - changed-files:
+      - any-glob-to-any-file: '**/03-Interview-Questions/**'
+
+'type:workflow':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.github/workflows/**'
+          - '.github/**'
+
+'type:configuration':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.gitignore'
+          - 'VERSION'
+          - '*.json'
+          - '*.yml'
+          - '*.yaml'
+
+# Priority Labels
+'priority:high':
+  - head-branch:
+      - regex: '^(hotfix|critical|breaking)/'
+
+'priority:medium':
+  - head-branch:
+      - regex: '^(feature|enhancement)/'
+
+'priority:low':
+  - head-branch:
+      - regex: '^(chore|docs|refactor)/'
+
+# Status Labels
+'status:needs-review':
+  - base-branch:
+      - main
+      - develop
+
+'status:beginner-friendly':
+  - title-matches:
+      - regex: '(beginner|easy|first-time|good first issue)'
+
+'status:help-wanted':
+  - title-matches:
+      - regex: '(help wanted|seeking help|need assistance)'
+
+# Skill Level Labels
+'difficulty:beginner':
+  - changed-files:
+      - any-glob-to-any-file: '01-Fundamentals/**'
+
+'difficulty:intermediate':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '02-OOP/**'
+          - '03-Advanced-Features/**'
+          - '04-LINQ/**'
+
+'difficulty:advanced':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '05-Async-Programming/**'
+          - '06-System-Design/**'
+          - '06-Web-Development/**'
+          - '07-Database-Access/**'
+          - '08-Testing/**'
+
+# Learning Path Labels
+'learning-path:core':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '01-Fundamentals/**'
+          - '02-OOP/**'
+          - '03-Advanced-Features/**'
+
+'learning-path:practical':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '04-LINQ/**'
+          - '05-Async-Programming/**'
+          - '06-Web-Development/**'
+
+'learning-path:enterprise':
+  - changed-files:
+      - any-glob-to-any-file:
+          - '06-System-Design/**'
+          - '07-Database-Access/**'
+          - '08-Testing/**'
+
+# Action Required Labels
+'action:review-requested':
+  - title-matches:
+      - regex: '\[REVIEW\]'
+
+'action:needs-testing':
+  - title-matches:
+      - regex: '\[TEST\]'
+
+'action:blocked':
+  - title-matches:
+      - regex: '\[BLOCKED\]'
+
+'action:in-progress':
+  - title-matches:
+      - regex: '\[WIP\]|\[IN PROGRESS\]'
+
+# Community Labels
+'good first issue':
+  - title-matches:
+      - regex: '(good first issue|beginner|starter)'
+
+'help wanted':
+  - title-matches:
+      - regex: '(help wanted|assistance needed)'
+
+'question':
+  - title-matches:
+      - regex: '^\?|^question:'
+
+'discussion':
+  - title-matches:
+      - regex: '(discuss|discussion|feedback)'
+
+# Maintenance Labels
+'maintenance:dependencies':
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'package.json'
+          - 'package-lock.json'
+          - '*.csproj'
+
+'maintenance:tests':
+  - changed-files:
+      - any-glob-to-any-file: '**/*[Tt]est*.cs'
+
+'maintenance:ci-cd':
+  - changed-files:
+      - any-glob-to-any-file: '.github/workflows/**'
+
+'maintenance:version':
+  - changed-files:
+      - any-glob-to-any-file: 'VERSION'
+
+# Impact Labels
+'impact:documentation':
+  - changed-files:
+      - any-glob-to-any-file: '**/*.md'
+
+'impact:breaking-change':
+  - title-matches:
+      - regex: '(BREAKING|breaking change)'
+
+'impact:performance':
+  - title-matches:
+      - regex: '(performance|perf|optimize)'
