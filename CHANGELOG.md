@@ -1,3 +1,10 @@
+## [v0.1.16] - 2026-08-23
+
+## 📝 Other Changes
+- Create FUNDING.yml (200195d)
+
+
+
 ## [v0.1.15] - 2026-08-23
 
 ## 📚 Documentation
