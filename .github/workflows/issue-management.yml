@@ -23,10 +23,10 @@ jobs:
 
       - name: Validate issue format
         id: validate
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
         run: |
-          ISSUE_BODY="${{ github.event.issue.body }}"
-          ISSUE_TITLE="${{ github.event.issue.title }}"
-          
           # Check if issue has minimum content
           if [ -z "$ISSUE_BODY" ] || [ ${#ISSUE_BODY} -lt 20 ]; then
             echo "incomplete=true" >> $GITHUB_OUTPUT
@@ -97,10 +97,10 @@ jobs:
 
       - name: Check PR description
         id: pr-check
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
-          PR_BODY="${{ github.event.pull_request.body }}"
-          PR_TITLE="${{ github.event.pull_request.title }}"
-          
           # Check minimum length
           if [ -z "$PR_BODY" ] || [ ${#PR_BODY} -lt 20 ]; then
             echo "needs_description=true" >> $GITHUB_OUTPUT
@@ -220,9 +220,9 @@ jobs:
     steps:
       - name: Check for issue reference
         id: check-ref
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
         run: |
-          PR_BODY="${{ github.event.pull_request.body }}"
-          
           if echo "$PR_BODY" | grep -qE '(fixes|closes|resolves|related to|#[0-9]+)'; then
             echo "has_reference=true" >> $GITHUB_OUTPUT
           else
