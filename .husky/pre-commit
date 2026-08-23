@@ -3,8 +3,8 @@
 
 echo "🔍 Running pre-commit checks..."
 
-# Get staged files
-STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+# Get staged files (excluding node_modules)
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -v '^node_modules/')
 
 # Filter for markdown files
 MARKDOWN_FILES=$(echo "$STAGED_FILES" | grep -E '\.(md|markdown)$' || true)
