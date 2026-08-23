@@ -21,12 +21,13 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Determine tag
         id: tag
+        shell: bash
         run: |
           if [ -n "${{ github.event.inputs.tag }}" ]; then
             TAG="${{ github.event.inputs.tag }}"
@@ -38,6 +39,7 @@ jobs:
 
       - name: Generate changelog from commits
         id: changelog
+        shell: bash
         run: |
           TAG="${{ steps.tag.outputs.tag }}"
           PREV_TAG=$(git describe --tags --abbrev=0 "$TAG"^ 2>/dev/null || echo "")
@@ -88,6 +90,7 @@ jobs:
 
       - name: Get commit count and contributors
         id: stats
+        shell: bash
         run: |
           TAG="${{ steps.tag.outputs.tag }}"
           PREV_TAG=$(git describe --tags --abbrev=0 "$TAG"^ 2>/dev/null || echo "")
@@ -145,6 +148,7 @@ jobs:
 
       - name: Update CHANGELOG.md
         id: update_changelog
+        shell: bash
         run: |
           TAG="${{ steps.tag.outputs.tag }}"
           DATE=$(date -u +'%Y-%m-%d')

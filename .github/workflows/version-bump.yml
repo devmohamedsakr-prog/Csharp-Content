@@ -26,7 +26,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -38,6 +38,7 @@ jobs:
 
       - name: Get current version
         id: current_version
+        shell: bash
         run: |
           if [ -f VERSION ]; then
             CURRENT=$(cat VERSION)
@@ -49,6 +50,7 @@ jobs:
 
       - name: Calculate new version
         id: new_version
+        shell: bash
         run: |
           CURRENT="${{ steps.current_version.outputs.current }}"
           MAJOR=$(echo $CURRENT | cut -d. -f1)
@@ -75,12 +77,14 @@ jobs:
           echo "New version: $NEW_VERSION"
 
       - name: Update VERSION file
+        shell: bash
         run: |
           echo "${{ steps.new_version.outputs.version }}" > VERSION
           git add VERSION
           git commit -m "chore: bump version to ${{ steps.new_version.outputs.version }}"
 
       - name: Create and push tag
+        shell: bash
         run: |
           TAG="v${{ steps.new_version.outputs.version }}"
           git tag -a "$TAG" -m "Release $TAG"
@@ -106,6 +110,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create commit comment
+        shell: bash
         run: |
           echo "✅ Version bumped from ${{ steps.current_version.outputs.current }} to ${{ steps.new_version.outputs.version }}"
           echo "📌 Tag created: v${{ steps.new_version.outputs.version }}"
