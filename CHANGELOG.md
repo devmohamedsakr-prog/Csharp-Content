@@ -1,3 +1,21 @@
+## [v0.1.9] - 2026-08-23
+
+## 🐛 Bug Fixes
+- fix: securely pass PR body as env var to prevent bash evaluation errors (531225d)
+
+## 🔧 Improvements & Maintenance
+- chore: release v0.1.7 [skip ci] (30f3b7a)
+- chore: release v0.1.8 [skip ci] (b8540a8)
+
+## 📝 Other Changes
+- chore(deps): bump actions/ai-inference from 1 to 3 (12bfb7c)
+- Merge pull request #3 from devmohamedsakr-prog/dependabot/github_actions/actions/ai-inference-3 (8f4dcc2)
+- chore(deps-dev): bump husky from 8.0.3 to 9.1.7 (a12ee84)
+- Merge pull request #6 from devmohamedsakr-prog/dependabot/npm_and_yarn/husky-9.1.7 (ad0e12c)
+- Merge branch 'main' of https://github.com/devmohamedsakr-prog/Csharp-Content (bda2dea)
+
+
+
 ## [v0.1.8] - 2026-08-23
 
 ## 📝 Other Changes
