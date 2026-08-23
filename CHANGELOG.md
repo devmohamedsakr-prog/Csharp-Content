@@ -1,3 +1,11 @@
+## [v0.1.10] - 2026-08-23
+
+## ✨ Features
+- feat: Add comprehensive shortcuts system with snippets and IDE shortcuts (498b4d9)
+- feat: Add complete Code-Snippets folder with 15 focused IDE snippet files (87b0008)
+
+
+
 ## [v0.1.9] - 2026-08-23
 
 ## 🐛 Bug Fixes
