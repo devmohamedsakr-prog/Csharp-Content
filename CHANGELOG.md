@@ -1,3 +1,18 @@
+## [v0.1.13] - 2026-08-23
+
+## 🐛 Bug Fixes
+- fix: resolve markdown linting workflow issues and update CHANGELOG (6652a09)
+- fix: resolve merge conflict in CHANGELOG (92f0fc2)
+- fix: resolve Node 20 deprecation and bash script errors in issue-management workflow (1952516)
+
+## 🔧 Improvements & Maintenance
+- chore: release v0.1.12 [skip ci] (852c0f8)
+
+## 📝 Other Changes
+- Merge branch 'main' of https://github.com/devmohamedsakr-prog/Csharp-Content (59a432d)
+
+
+
 ## [v0.1.12] - 2026-08-23
 
 ## ✨ Features
