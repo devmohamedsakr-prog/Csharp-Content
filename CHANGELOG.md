@@ -1,3 +1,11 @@
+## [v0.1.6] - 2026-08-23
+
+## 📝 Other Changes
+- chore(deps): bump tj-actions/changed-files from 40 to 47 (f674193)
+- Merge pull request #2 from devmohamedsakr-prog/dependabot/github_actions/tj-actions/changed-files-47 (a8c4972)
+
+
+
 ## [v0.1.5] - 2026-08-23
 
 ## 📝 Other Changes
