@@ -21,6 +21,7 @@
     "headers_line_length": 120,
     "stern": false
   },
+  "MD020": false,
   "MD024": {
     "siblings_only": true
   },
@@ -32,6 +33,6 @@
   },
   "MD033": false,
   "MD034": false,
-  "MD040": true,
+  "MD040": false,
   "MD041": false
 }
