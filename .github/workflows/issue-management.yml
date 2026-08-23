@@ -8,6 +8,9 @@ on:
   issue_comment:
     types: [created, edited]
 
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
 jobs:
   validate-issue:
     name: Validate Issue Format
@@ -19,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v5
 
       - name: Validate issue format
         id: validate
@@ -41,6 +44,7 @@ jobs:
           else
             echo "uses_template=false" >> $GITHUB_OUTPUT
           fi
+        shell: bash
 
       - name: Comment on incomplete issue
         if: steps.validate.outputs.incomplete == 'true'
@@ -78,7 +82,7 @@ jobs:
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                body: '👋 **Welcome to the C# Learning Repository!**\n\nThank you for opening your first issue! We appreciate your engagement. Our team will review this and get back to you soon.\n\n**Quick Links:**\n- [📖 Contributing Guide](../../CONTRIBUTING.md)\n- [📚 Learning Path](../../README.md)\n- [💬 Discussions](../../discussions)\n\nFeel free to ask questions or share feedback!'
+                body: '👋 Welcome to the C# Learning Repository!\n\nThank you for opening your first issue! We appreciate your engagement. Our team will review this and get back to you soon.\n\nFeel free to ask questions or share feedback!'
               });
             }
         continue-on-error: true
@@ -93,7 +97,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v5
 
       - name: Check PR description
         id: pr-check
@@ -114,6 +118,7 @@ jobs:
           else
             echo "follows_convention=false" >> $GITHUB_OUTPUT
           fi
+        shell: bash
 
       - name: Comment on minimal PR
         if: steps.pr-check.outputs.needs_description == 'true'
@@ -137,7 +142,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '💡 **Commit Convention Suggestion**\n\nConsider using conventional commits for your PR title:\n- `feat: add new feature`\n- `fix: correct a bug`\n- `docs: update documentation`\n- `refactor: reorganize code`\n- `test: add or update tests`\n\nThis helps with automatic changelog generation!'
+              body: '💡 **Commit Convention Suggestion**\n\nConsider using conventional commits for your PR title:\n- feat: add new feature\n- fix: correct a bug\n- docs: update documentation\n- refactor: reorganize code\n- test: add or update tests\n\nThis helps with automatic changelog generation!'
             });
         continue-on-error: true
 
@@ -153,7 +158,7 @@ jobs:
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                body: '🎉 **Welcome to the C# Learning Repository!**\n\nThank you for your first contribution! We\'re excited to review your changes.\n\n**What Happens Next:**\n1. Our CI/CD checks will run automatically\n2. Reviewers will provide feedback\n3. Once approved, your changes will be merged\n\n**Tips:**\n- Check that all CI checks pass ✅\n- Respond to review feedback\n- Feel free to ask questions!\n\nHappy contributing! 🚀'
+                body: '🎉 Welcome to the C# Learning Repository!\n\nThank you for your first contribution! We are excited to review your changes.\n\nWhat Happens Next:\n1. Our CI/CD checks will run automatically\n2. Reviewers will provide feedback\n3. Once approved, your changes will be merged\n\nHappy contributing! 🚀'
               });
             }
         continue-on-error: true
@@ -176,7 +181,6 @@ jobs:
             
             const labels = [];
             
-            // Add content labels
             if (body.includes('fundamental') || body.includes('syntax') || body.includes('data type')) {
               labels.push('content:fundamentals');
             }
@@ -193,7 +197,6 @@ jobs:
               labels.push('type:examples');
             }
             
-            // Add difficulty labels
             if (body.includes('beginner') || body.includes('start')) {
               labels.push('difficulty:beginner');
             }
@@ -228,6 +231,7 @@ jobs:
           else
             echo "has_reference=false" >> $GITHUB_OUTPUT
           fi
+        shell: bash
 
       - name: Request issue reference
         if: steps.check-ref.outputs.has_reference == 'false'
@@ -238,6 +242,6 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '🔗 **Issue Reference Suggestion**\n\nPlease reference a related issue in your PR description using one of these keywords:\n- Closes #issue_number\n- Fixes #issue_number\n- Resolves #issue_number\n- Related to #issue_number\n\nExample: `Closes #123` links this PR to issue 123.'
+              body: '🔗 **Issue Reference Suggestion**\n\nPlease reference a related issue in your PR description using one of these keywords:\n- Closes #issue_number\n- Fixes #issue_number\n- Resolves #issue_number\n- Related to #issue_number\n\nExample: Closes #123 links this PR to issue 123.'
             });
         continue-on-error: true
