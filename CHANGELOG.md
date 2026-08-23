@@ -1,3 +1,13 @@
+## [v0.1.11] - 2026-08-23
+
+## ✨ Features
+- feat: Add comprehensive OOP paradigms section (6aca8f9)
+
+## 📝 Other Changes
+- Merge branch 'feature/oop-comprehensive' (3b0684b)
+
+
+
 ## [v0.1.10] - 2026-08-23
 
 ## ✨ Features
