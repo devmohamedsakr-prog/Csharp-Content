@@ -1,3 +1,11 @@
+## [v0.1.7] - 2026-08-23
+
+## 📝 Other Changes
+- chore(deps): bump actions/ai-inference from 1 to 3 (12bfb7c)
+- Merge pull request #3 from devmohamedsakr-prog/dependabot/github_actions/actions/ai-inference-3 (8f4dcc2)
+
+
+
 ## [v0.1.6] - 2026-08-23
 
 ## 📝 Other Changes
