@@ -1,3 +1,11 @@
+## [v0.1.5] - 2026-08-23
+
+## 📝 Other Changes
+- chore(deps): bump actions/labeler from 5 to 7 (d1f57b2)
+- Merge pull request #4 from devmohamedsakr-prog/dependabot/github_actions/actions/labeler-7 (b860baf)
+
+
+
 ## [v0.1.4] - 2026-08-23
 
 ## 📝 Other Changes
