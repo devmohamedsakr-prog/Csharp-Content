@@ -1,3 +1,11 @@
+## [v0.1.2] - 2026-08-23
+
+## 📝 Other Changes
+- chore(deps-dev): bump markdownlint-cli from 0.37.0 to 0.49.1 (e95f8f4)
+- Merge pull request #8 from devmohamedsakr-prog/dependabot/npm_and_yarn/markdownlint-cli-0.49.1 (e2e585f)
+
+
+
 ## [v0.1.1] - 2026-08-23
 
 ## ✨ Features
