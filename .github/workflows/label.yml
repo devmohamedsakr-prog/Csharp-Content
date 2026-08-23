@@ -24,7 +24,7 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
 
-      - name: Apply labels
+      - name: Apply labels based on file paths
         uses: actions/labeler@v5
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
