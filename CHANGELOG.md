@@ -1,3 +1,11 @@
+## [v0.1.4] - 2026-08-23
+
+## 📝 Other Changes
+- chore(deps): bump actions/checkout from 4 to 7 (b62cad2)
+- Merge pull request #5 from devmohamedsakr-prog/dependabot/github_actions/actions/checkout-7 (70ae2c8)
+
+
+
 ## [v0.1.3] - 2026-08-23
 
 ## 📝 Other Changes
