@@ -1,0 +1,6 @@
+# This is a list of owners for the repository.
+# When someone opens a pull request, GitHub will automatically ask the owners for a review.
+# You can use GitHub usernames or team names here.
+
+# Replace @your-github-username with your actual GitHub username
+*       @your-github-username

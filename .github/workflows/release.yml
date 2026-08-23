@@ -2,14 +2,12 @@ name: Automated Release with Changelog
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
+    paths-ignore:
+      - 'VERSION'
+      - 'CHANGELOG.md'
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version to release (e.g., 0.1.0)'
-        required: true
-        type: string
 
 jobs:
   changelog:
@@ -24,16 +22,50 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+      - name: Get current version
+        id: current_version
+        shell: bash
+        run: |
+          if [ -f VERSION ]; then
+            CURRENT=$(cat VERSION)
+          else
+            CURRENT="0.0.0"
+            echo "0.0.0" > VERSION
+          fi
+          echo "current=$CURRENT" >> $GITHUB_OUTPUT
+
+      - name: Calculate new version
+        id: new_version
+        shell: bash
+        run: |
+          CURRENT="${{ steps.current_version.outputs.current }}"
+          MAJOR=$(echo $CURRENT | cut -d. -f1)
+          MINOR=$(echo $CURRENT | cut -d. -f2)
+          PATCH=$(echo $CURRENT | cut -d. -f3)
+          
+          PATCH=$((PATCH + 1))
+          
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
+
+      - name: Update VERSION file
+        shell: bash
+        run: |
+          echo "${{ steps.new_version.outputs.version }}" > VERSION
 
       - name: Determine tag
         id: tag
         shell: bash
         run: |
-          if [ -n "${{ github.event.inputs.version }}" ]; then
-            TAG="v${{ github.event.inputs.version }}"
-          else
-            TAG=${{ github.ref_name }}
-          fi
+          TAG="v${{ steps.new_version.outputs.version }}"
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "Release tag: $TAG"
 
@@ -44,14 +76,14 @@ jobs:
           TAG="${{ steps.tag.outputs.tag }}"
           
           # Try to find previous tag, or use root commit
-          PREV_TAG=$(git describe --tags --abbrev=0 "$TAG"^ 2>/dev/null || echo "")
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
           
           if [ -z "$PREV_TAG" ]; then
-            # First release - get all commits up to this tag
-            COMMITS=$(git log "$TAG" --pretty=format:"- %s (%h)" --reverse 2>/dev/null || echo "")
+            # First release - get all commits up to this point
+            COMMITS=$(git log --pretty=format:"- %s (%h)" --reverse 2>/dev/null || echo "")
           else
-            # Subsequent release - get commits between tags
-            COMMITS=$(git log "$PREV_TAG..$TAG" --pretty=format:"- %s (%h)" --reverse 2>/dev/null || echo "")
+            # Subsequent release - get commits since last tag
+            COMMITS=$(git log "$PREV_TAG..HEAD" --pretty=format:"- %s (%h)" --reverse 2>/dev/null || echo "")
           fi
           
           # If no commits found, provide default message
@@ -90,15 +122,7 @@ jobs:
           fi
           
           if [ -z "$CHANGELOG" ]; then
-            CHANGELOG="Initial release of C# Learning Content"
-          fi
-          
-          echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          echo -e "$CHANGELOG" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-          
-          if [ -z "$CHANGELOG" ]; then
-            CHANGELOG="No commits found for this release"
+            CHANGELOG="Automated release of C# Learning Content"
           fi
           
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
@@ -109,23 +133,50 @@ jobs:
         id: stats
         shell: bash
         run: |
-          TAG="${{ steps.tag.outputs.tag }}"
-          PREV_TAG=$(git describe --tags --abbrev=0 "$TAG"^ 2>/dev/null || echo "")
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
           
           if [ -z "$PREV_TAG" ]; then
-            COMMIT_COUNT=$(git rev-list --count "$TAG" 2>/dev/null || echo "0")
-            CONTRIBUTORS=$(git log "$TAG" --format="%an" 2>/dev/null | sort -u | wc -l || echo "1")
+            COMMIT_COUNT=$(git rev-list --count HEAD 2>/dev/null || echo "0")
+            CONTRIBUTORS=$(git log --format="%an" 2>/dev/null | sort -u | wc -l || echo "1")
           else
-            COMMIT_COUNT=$(git rev-list --count "$PREV_TAG..$TAG" 2>/dev/null || echo "0")
-            CONTRIBUTORS=$(git log "$PREV_TAG..$TAG" --format="%an" 2>/dev/null | sort -u | wc -l || echo "1")
+            COMMIT_COUNT=$(git rev-list --count "$PREV_TAG..HEAD" 2>/dev/null || echo "0")
+            CONTRIBUTORS=$(git log "$PREV_TAG..HEAD" --format="%an" 2>/dev/null | sort -u | wc -l || echo "1")
           fi
           
           echo "commits=$COMMIT_COUNT" >> $GITHUB_OUTPUT
           echo "contributors=$CONTRIBUTORS" >> $GITHUB_OUTPUT
 
+      - name: Update CHANGELOG.md
+        id: update_changelog
+        shell: bash
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          DATE=$(date -u +'%Y-%m-%d')
+          
+          if [ ! -f CHANGELOG.md ]; then
+            touch CHANGELOG.md
+          fi
+          
+          {
+            echo "## [$TAG] - $DATE"
+            echo ""
+            echo "${{ steps.changelog.outputs.changelog }}"
+            echo ""
+            cat CHANGELOG.md
+          } > CHANGELOG.md.tmp
+          
+          mv CHANGELOG.md.tmp CHANGELOG.md
+
+      - name: Commit and push changes
+        run: |
+          git add VERSION CHANGELOG.md
+          git commit -m "chore: release ${{ steps.tag.outputs.tag }} [skip ci]" || true
+          git push origin main || true
+          git tag -a "${{ steps.tag.outputs.tag }}" -m "Release ${{ steps.tag.outputs.tag }}"
+          git push origin "${{ steps.tag.outputs.tag }}" || true
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
         with:
           tag_name: ${{ steps.tag.outputs.tag }}
           name: Release ${{ steps.tag.outputs.tag }}
@@ -163,43 +214,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Print summary
-        shell: bash
-        run: |
-          echo "✅ Release workflow execution complete"
-          echo "📌 Release tag: ${{ steps.tag.outputs.tag }}"
-          echo "📊 Commits: ${{ steps.stats.outputs.commits }}"
-          echo "👥 Contributors: ${{ steps.stats.outputs.contributors }}"
-
-      - name: Update CHANGELOG.md
-        id: update_changelog
-        shell: bash
-        run: |
-          TAG="${{ steps.tag.outputs.tag }}"
-          DATE=$(date -u +'%Y-%m-%d')
-          
-          if [ ! -f CHANGELOG.md ]; then
-            touch CHANGELOG.md
-          fi
-          
-          {
-            echo "## [$TAG] - $DATE"
-            echo ""
-            echo "${{ steps.changelog.outputs.changelog }}"
-            echo ""
-            cat CHANGELOG.md
-          } > CHANGELOG.md.tmp
-          
-          mv CHANGELOG.md.tmp CHANGELOG.md
-
-      - name: Commit CHANGELOG.md
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add CHANGELOG.md
-          git commit -m "chore: update CHANGELOG for ${{ steps.tag.outputs.tag }}" || true
-          git push origin main || true
-
   notify:
     name: Notify Release
     runs-on: ubuntu-latest
@@ -209,6 +223,6 @@ jobs:
     steps:
       - name: Create deployment status
         run: |
-          echo "✅ Release ${{ github.ref_name }} has been successfully created!"
+          echo "✅ Release has been successfully created!"
           echo "📦 Check the release page for detailed information"
           echo "📝 Changelog has been automatically updated"
