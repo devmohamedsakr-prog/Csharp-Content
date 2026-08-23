@@ -1,3 +1,10 @@
+## [v0.1.17] - 2026-08-23
+
+## 📝 Other Changes
+- Create CODE_OF_CONDUCT.md (0c9f900)
+
+
+
 ## [v0.1.16] - 2026-08-23
 
 ## 📝 Other Changes
