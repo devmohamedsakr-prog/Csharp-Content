@@ -1,0 +1,64 @@
+#!/bin/sh
+# Pre-commit hook for enforcing markdown standards
+
+echo "🔍 Running pre-commit checks..."
+
+# Get staged files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+
+# Filter for markdown files
+MARKDOWN_FILES=$(echo "$STAGED_FILES" | grep -E '\.(md|markdown)$' || true)
+
+if [ -z "$MARKDOWN_FILES" ]; then
+  echo "✅ No markdown files to check"
+  exit 0
+fi
+
+echo "📝 Checking markdown files..."
+echo "$MARKDOWN_FILES" | while read -r file; do
+  echo "  Checking: $file"
+done
+
+# Check if markdownlint is available
+if ! command -v markdownlint &> /dev/null; then
+  echo "⚠️  markdownlint not found. Installing..."
+  npm install -g markdownlint-cli >/dev/null 2>&1 || {
+    echo "❌ Failed to install markdownlint-cli"
+    exit 1
+  }
+fi
+
+# Run markdownlint on staged markdown files
+LINT_ERRORS=$(echo "$MARKDOWN_FILES" | xargs markdownlint -c .markdownlint.json 2>&1 || true)
+
+if [ -n "$LINT_ERRORS" ]; then
+  echo "❌ Markdown linting failed:"
+  echo "$LINT_ERRORS"
+  echo ""
+  echo "To fix issues, run:"
+  echo "  markdownlint-cli --fix [file]"
+  echo ""
+  exit 1
+fi
+
+echo "✅ Markdown checks passed!"
+
+# Check for common issues
+echo "🔐 Running additional checks..."
+
+# Check for trailing whitespace
+TRAILING_WS=$(echo "$MARKDOWN_FILES" | xargs grep -l ' $' || true)
+if [ -n "$TRAILING_WS" ]; then
+  echo "⚠️  Trailing whitespace found in:"
+  echo "$TRAILING_WS"
+  echo "Use: sed -i 's/[[:space:]]*$//' <file>"
+fi
+
+# Check for TODOs/FIXMEs (warning only)
+TODOS=$(echo "$MARKDOWN_FILES" | xargs grep -E 'TODO|FIXME' || true)
+if [ -n "$TODOS" ]; then
+  echo "⚠️  TODO/FIXME comments found (not blocking):"
+  echo "$TODOS" | head -5
+fi
+
+exit 0

@@ -1,0 +1,91 @@
+name: Markdown Linting on PR
+
+on:
+  pull_request:
+    paths:
+      - '**.md'
+      - '.markdownlint.json'
+  workflow_dispatch:
+
+jobs:
+  markdown-lint:
+    name: Lint Markdown Files
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v40
+        with:
+          files: |
+            **/*.md
+
+      - name: Setup Node.js
+        if: steps.changed-files.outputs.any_changed == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install markdownlint
+        if: steps.changed-files.outputs.any_changed == 'true'
+        run: npm install -g markdownlint-cli
+
+      - name: Run markdownlint
+        if: steps.changed-files.outputs.any_changed == 'true'
+        id: lint
+        run: |
+          echo "Linting changed markdown files..."
+          LINT_RESULT=$(markdownlint -c .markdownlint.json ${{ steps.changed-files.outputs.all_changed_files }} 2>&1 || true)
+          
+          if [ -n "$LINT_RESULT" ]; then
+            echo "lint_failed=true" >> $GITHUB_OUTPUT
+            {
+              echo "LINT_OUTPUT<<EOF"
+              echo "$LINT_RESULT"
+              echo "EOF"
+            } >> $GITHUB_OUTPUT
+          else
+            echo "lint_failed=false" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      - name: Comment on PR with lint results
+        if: steps.changed-files.outputs.any_changed == 'true' && steps.lint.outputs.lint_failed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const lintOutput = `${{ steps.lint.outputs.LINT_OUTPUT }}`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 📝 Markdown Linting Report\n\n\`\`\`\n${lintOutput}\n\`\`\`\n\n**To fix issues locally:**\n\`\`\`bash\nnpm install\nnpm run lint:md:fix\n\`\`\``
+            });
+
+      - name: Fail if linting failed
+        if: steps.lint.outputs.lint_failed == 'true'
+        run: |
+          echo "❌ Markdown linting failed"
+          echo "${{ steps.lint.outputs.LINT_OUTPUT }}"
+          exit 1
+
+      - name: Success comment
+        if: steps.changed-files.outputs.any_changed == 'true' && steps.lint.outputs.lint_failed != 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '✅ All markdown files passed linting checks!'
+            });

@@ -1,0 +1,37 @@
+{
+  "default": true,
+  "MD003": {
+    "style": "consistent"
+  },
+  "MD004": {
+    "style": "consistent"
+  },
+  "MD007": {
+    "indent": 2
+  },
+  "MD013": {
+    "line_length": 120,
+    "heading_line_length": 120,
+    "header_line_length": 120,
+    "code_blocks": true,
+    "code_line_length": 120,
+    "ignore_code_languages": ["json", "xml", "yaml"],
+    "tables": false,
+    "headers": true,
+    "headers_line_length": 120,
+    "stern": false
+  },
+  "MD024": {
+    "siblings_only": true
+  },
+  "MD025": {
+    "level": 1
+  },
+  "MD029": {
+    "style": "ordered"
+  },
+  "MD033": false,
+  "MD034": false,
+  "MD040": true,
+  "MD041": false
+}

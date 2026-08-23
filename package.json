@@ -1,0 +1,32 @@
+{
+  "name": "csharp-learning-content",
+  "version": "1.0.0",
+  "description": "Comprehensive C# learning content repository with explanations, examples, and interview questions",
+  "scripts": {
+    "prepare": "husky install",
+    "lint:md": "markdownlint -c .markdownlint.json '**/*.md'",
+    "lint:md:fix": "markdownlint -c .markdownlint.json --fix '**/*.md'",
+    "validate": "npm run lint:md"
+  },
+  "devDependencies": {
+    "husky": "^8.0.3",
+    "markdownlint-cli": "^0.37.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devmohamedsakr-prog/Csharp-Content.git"
+  },
+  "keywords": [
+    "csharp",
+    "learning",
+    "tutorial",
+    "interview-prep",
+    "programming",
+    "dotnet"
+  ],
+  "author": "Mohamed Sakr",
+  "license": "MIT"
+}
