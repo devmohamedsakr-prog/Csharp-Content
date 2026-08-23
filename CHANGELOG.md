@@ -1,3 +1,14 @@
+## [v0.1.15] - 2026-08-23
+
+## 📚 Documentation
+- docs: modernize CONTRIBUTING.md with expert styling and structure (50d510f)
+- docs: modernize SECURITY.md with expert styling and clear focus (6767b94)
+
+## 📝 Other Changes
+- Merge branch 'docs' (acd34c0)
+
+
+
 ## [v0.1.14] - 2026-08-23
 
 ## 🔧 Improvements & Maintenance
