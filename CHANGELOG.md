@@ -1,3 +1,11 @@
+## [v0.1.3] - 2026-08-23
+
+## 📝 Other Changes
+- chore(deps): bump actions/setup-dotnet from 5 to 6 (590bfcd)
+- Merge pull request #7 from devmohamedsakr-prog/dependabot/github_actions/actions/setup-dotnet-6 (b594775)
+
+
+
 ## [v0.1.2] - 2026-08-23
 
 ## 📝 Other Changes
