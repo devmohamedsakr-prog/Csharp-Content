@@ -1,3 +1,11 @@
+## [v0.1.8] - 2026-08-23
+
+## 📝 Other Changes
+- chore(deps-dev): bump husky from 8.0.3 to 9.1.7 (a12ee84)
+- Merge pull request #6 from devmohamedsakr-prog/dependabot/npm_and_yarn/husky-9.1.7 (ad0e12c)
+
+
+
 ## [v0.1.7] - 2026-08-23
 
 ## 📝 Other Changes
