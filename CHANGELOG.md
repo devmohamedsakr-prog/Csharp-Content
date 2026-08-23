@@ -1,3 +1,14 @@
+## [v0.1.14] - 2026-08-23
+
+## 🔧 Improvements & Maintenance
+- chore: cleanup - remove unnecessary documentation files (df36c5c)
+- chore: add MIT LICENSE file (f8d74a8)
+
+## 📚 Documentation
+- docs: add comprehensive repository structure documentation (e7d5583)
+
+
+
 ## [v0.1.13] - 2026-08-23
 
 ## 🐛 Bug Fixes
