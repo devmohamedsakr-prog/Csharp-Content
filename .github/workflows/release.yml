@@ -6,8 +6,8 @@ on:
       - 'v*'
   workflow_dispatch:
     inputs:
-      tag:
-        description: 'Tag to create release for'
+      version:
+        description: 'Version to release (e.g., 0.1.0)'
         required: true
         type: string
 
@@ -29,8 +29,8 @@ jobs:
         id: tag
         shell: bash
         run: |
-          if [ -n "${{ github.event.inputs.tag }}" ]; then
-            TAG="${{ github.event.inputs.tag }}"
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            TAG="v${{ github.event.inputs.version }}"
           else
             TAG=${{ github.ref_name }}
           fi
@@ -42,12 +42,21 @@ jobs:
         shell: bash
         run: |
           TAG="${{ steps.tag.outputs.tag }}"
+          
+          # Try to find previous tag, or use root commit
           PREV_TAG=$(git describe --tags --abbrev=0 "$TAG"^ 2>/dev/null || echo "")
           
           if [ -z "$PREV_TAG" ]; then
-            COMMITS=$(git log "$TAG" --pretty=format:"- %s (%h)" --reverse)
+            # First release - get all commits up to this tag
+            COMMITS=$(git log "$TAG" --pretty=format:"- %s (%h)" --reverse 2>/dev/null || echo "")
           else
-            COMMITS=$(git log "$PREV_TAG..$TAG" --pretty=format:"- %s (%h)" --reverse)
+            # Subsequent release - get commits between tags
+            COMMITS=$(git log "$PREV_TAG..$TAG" --pretty=format:"- %s (%h)" --reverse 2>/dev/null || echo "")
+          fi
+          
+          # If no commits found, provide default message
+          if [ -z "$COMMITS" ]; then
+            COMMITS="- Initial release"
           fi
           
           # Organize commits by type
@@ -81,6 +90,14 @@ jobs:
           fi
           
           if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="Initial release of C# Learning Content"
+          fi
+          
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          if [ -z "$CHANGELOG" ]; then
             CHANGELOG="No commits found for this release"
           fi
           
@@ -96,11 +113,11 @@ jobs:
           PREV_TAG=$(git describe --tags --abbrev=0 "$TAG"^ 2>/dev/null || echo "")
           
           if [ -z "$PREV_TAG" ]; then
-            COMMIT_COUNT=$(git rev-list --count "$TAG")
-            CONTRIBUTORS=$(git log "$TAG" --format="%an" | sort -u | wc -l)
+            COMMIT_COUNT=$(git rev-list --count "$TAG" 2>/dev/null || echo "0")
+            CONTRIBUTORS=$(git log "$TAG" --format="%an" 2>/dev/null | sort -u | wc -l || echo "1")
           else
-            COMMIT_COUNT=$(git rev-list --count "$PREV_TAG..$TAG")
-            CONTRIBUTORS=$(git log "$PREV_TAG..$TAG" --format="%an" | sort -u | wc -l)
+            COMMIT_COUNT=$(git rev-list --count "$PREV_TAG..$TAG" 2>/dev/null || echo "0")
+            CONTRIBUTORS=$(git log "$PREV_TAG..$TAG" --format="%an" 2>/dev/null | sort -u | wc -l || echo "1")
           fi
           
           echo "commits=$COMMIT_COUNT" >> $GITHUB_OUTPUT
@@ -145,6 +162,14 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Print summary
+        shell: bash
+        run: |
+          echo "✅ Release workflow execution complete"
+          echo "📌 Release tag: ${{ steps.tag.outputs.tag }}"
+          echo "📊 Commits: ${{ steps.stats.outputs.commits }}"
+          echo "👥 Contributors: ${{ steps.stats.outputs.contributors }}"
 
       - name: Update CHANGELOG.md
         id: update_changelog
