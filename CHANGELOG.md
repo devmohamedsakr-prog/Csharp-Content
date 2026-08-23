@@ -1,3 +1,20 @@
+## [v0.1.12] - 2026-08-23
+
+## ✨ Features
+- feat: Add comprehensive OOP paradigms section (6aca8f9)
+
+## 🐛 Bug Fixes
+- fix: resolve markdown linting workflow issues and update CHANGELOG (6652a09)
+- fix: resolve merge conflict in CHANGELOG (92f0fc2)
+
+## 🔧 Improvements & Maintenance
+- chore: release v0.1.11 [skip ci] (4bae32a)
+
+## 📝 Other Changes
+- Merge branch 'feature/oop-comprehensive' (3b0684b)
+
+
+
 ## [v0.1.11] - 2026-08-23
 
 ### ✨ Features
